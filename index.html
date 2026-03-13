@@ -2,643 +2,36 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#080808">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>TEMPUS — Focus Timer</title>
+<meta name="description" content="TEMPUS — A minimal, beautiful focus timer. Sand clock, analog, and digital modes with ambient sounds, Pomodoro cycles, and session tracking.">
+<meta name="theme-color" content="#080808" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f4ee" media="(prefers-color-scheme: light)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TEMPUS">
+<meta property="og:title" content="TEMPUS — Focus Timer">
+<meta property="og:description" content="A minimal, beautiful focus timer with sand clock, analog, and digital modes.">
+<meta property="og:type" content="website">
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;TEMPUS — Focus Timer&quot;,&quot;short_name&quot;:&quot;TEMPUS&quot;,&quot;start_url&quot;:&quot;.&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;#080808&quot;,&quot;theme_color&quot;:&quot;#080808&quot;,&quot;description&quot;:&quot;Minimal focus timer&quot;}">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --black: #080808;
-    --surface: #111111;
-    --surface2: #1a1a1a;
-    --border: #2a2a2a;
-    --gold: #c8a96e;
-    --gold-dim: #7a6440;
-    --white: #f0ece4;
-    --white-dim: #888880;
-    --red: #e05252;
-    --green: #52c87a;
-    --blue: #527ae0;
-    --transition: cubic-bezier(0.77, 0, 0.175, 1);
-  }
-
-  html, body {
-    width: 100%; min-height: 100%;
-    background: var(--black);
-    color: var(--white);
-    font-family: 'Space Mono', monospace;
-    overflow-x: hidden;
-    overflow-y: auto;
-  }
-
-  /* ── GRAIN OVERLAY ── */
-  body::before {
-    content: '';
-    position: fixed; inset: 0; z-index: 9999;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-    opacity: 0.4;
-  }
-
-  /* ── PAGES ── */
-  .page {
-    position: fixed; inset: 0;
-    display: flex; flex-direction: column;
-    align-items: stretch;
-    opacity: 0; pointer-events: none;
-    transform: translateY(30px);
-    transition: opacity 0.6s var(--transition), transform 0.6s var(--transition);
-    overflow: hidden;
-  }
-  .page.active {
-    opacity: 1; pointer-events: all; transform: translateY(0);
-  }
-  .page.exit {
-    opacity: 0; transform: translateY(-30px); pointer-events: none;
-  }
-
-  /* Home: full scrollable column, starts from top */
-  #home {
-    align-items: center;
-    justify-content: flex-start;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    padding: 3rem 1rem 3rem;
-  }
-
-  /* ── HOME PAGE ── */
-  .home-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(2.5rem, 6vw, 5rem);
-    font-weight: 300;
-    letter-spacing: 0.4em;
-    color: var(--white);
-    text-transform: uppercase;
-    margin-bottom: 0.3em;
-    text-align: center;
-    padding: 0 1rem;
-    width: 100%;
-  }
-  .home-subtitle {
-    font-size: 0.6rem;
-    letter-spacing: 0.25em;
-    color: var(--white-dim);
-    text-transform: uppercase;
-    margin-bottom: 2.5rem;
-    text-align: center;
-    padding: 0 1rem;
-    width: 100%;
-  }
-
-  @media (max-width: 700px) {
-    .home-title { font-size: clamp(2rem, 10vw, 3rem); letter-spacing: 0.25em; }
-    .home-subtitle { font-size: 0.5rem; letter-spacing: 0.18em; margin-bottom: 1.5rem; }
-    #home { padding: 2.5rem 1.2rem 3rem; }
-  }
-
-  .home-cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-    padding: 0 2rem;
-    width: 100%;
-    max-width: 760px;
-  }
-
-  @media (max-width: 700px) {
-    .home-cards {
-      grid-template-columns: 1fr;
-      gap: 1rem;
-      padding: 0;
-      max-width: 360px;
-      width: 100%;
-    }
-  }
-
-  .home-card {
-    aspect-ratio: 1 / 1;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 1.2rem;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.3s, transform 0.3s var(--transition), box-shadow 0.3s;
-  }
-
-  /* On mobile, don't use aspect-ratio — use fixed height to keep cards compact */
-  @media (max-width: 700px) {
-    .home-card {
-      aspect-ratio: unset;
-      height: 160px;
-    }
-  }
-
-  .home-card::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(135deg, transparent 60%, rgba(200,169,110,0.06));
-    opacity: 0; transition: opacity 0.3s;
-  }
-  .home-card:hover {
-    border-color: var(--gold-dim);
-    transform: translateY(-4px);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-  }
-  .home-card:hover::before { opacity: 1; }
-
-  .card-icon {
-    width: 60px; height: 60px;
-    display: flex; align-items: center; justify-content: center;
-    position: relative;
-  }
-
-  .card-label {
-    font-size: 0.58rem;
-    letter-spacing: 0.28em;
-    color: var(--white-dim);
-    text-transform: uppercase;
-  }
-  .home-card:hover .card-label { color: var(--gold); }
-
-  /* Sand Clock SVG animation */
-  .sandclock-svg { transition: transform 0.4s var(--transition); }
-  .home-card:hover .sandclock-svg { transform: rotate(180deg); }
-
-  /* Analog ticking on hover */
-  .second-hand-home {
-    transform-origin: 50% 80%;
-    transform: rotate(0deg);
-    transition: none;
-  }
-  .home-card:hover .second-hand-home {
-    animation: tick-home 1s steps(60) infinite;
-  }
-  @keyframes tick-home {
-    to { transform: rotate(360deg); }
-  }
-
-  /* Digital blink on hover */
-  .digital-colon-home { opacity: 1; }
-  .home-card:hover .digital-colon-home {
-    animation: blink 1s step-end infinite;
-  }
-  @keyframes blink { 50% { opacity: 0; } }
-
-  /* ── SHARED TIMER PAGE STYLES ── */
-  .timer-page {
-    background: var(--black);
-    padding: 0;
-    justify-content: flex-start;
-  }
-
-  /* Header bar — title on its own row on mobile */
-  .page-header {
-    width: 100%;
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: center;
-    padding: 1rem 1.2rem 0.5rem;
-    flex-shrink: 0;
-    gap: 0.5rem;
-  }
-
-  .page-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 0.8rem; letter-spacing: 0.4em;
-    color: var(--white-dim); text-transform: uppercase;
-    text-align: center;
-    white-space: nowrap;
-    pointer-events: none;
-    grid-column: 2;
-  }
-
-  .back-btn {
-    background: none; border: 1px solid var(--border);
-    color: var(--white-dim); font-family: 'Space Mono', monospace;
-    font-size: 0.55rem; letter-spacing: 0.15em;
-    padding: 0.5rem 0.9rem; cursor: pointer; border-radius: 2px;
-    text-transform: uppercase; transition: all 0.2s;
-    display: flex; align-items: center; gap: 0.4rem;
-    white-space: nowrap;
-    grid-column: 1; justify-self: start;
-  }
-  .back-btn:hover { color: var(--white); border-color: var(--white-dim); }
-
-  .music-btn {
-    background: none; border: 1px solid var(--border);
-    color: var(--white-dim); font-family: 'Space Mono', monospace;
-    font-size: 0.55rem; letter-spacing: 0.15em;
-    padding: 0.5rem 0.9rem; cursor: pointer; border-radius: 2px;
-    text-transform: uppercase; transition: all 0.2s;
-    display: flex; align-items: center; gap: 0.4rem;
-    white-space: nowrap;
-    grid-column: 3; justify-self: end;
-  }
-  .music-btn:hover { color: var(--gold); border-color: var(--gold-dim); }
-  .music-btn.active { color: var(--gold); border-color: var(--gold); }
-
-  /* Page body — the scrollable content below header */
-  .page-body {
-    flex: 1;
-    width: 100%;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    padding: 1.2rem 1rem 2rem;
-    overflow-y: auto;
-  }
-
-  /* Time adjust controls */
-  .time-controls {
-    display: flex; align-items: center; gap: 1.5rem;
-    margin-bottom: 2rem;
-  }
-  .adj-btn {
-    background: none; border: 1px solid var(--border);
-    color: var(--white-dim); width: 36px; height: 36px;
-    border-radius: 50%; cursor: pointer; font-size: 1.2rem;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s; font-family: 'Space Mono', monospace;
-    flex-shrink: 0;
-  }
-  .adj-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
-
-  .time-display-text {
-    font-size: clamp(2rem, 5vw, 3.5rem);
-    font-family: 'Space Mono', monospace;
-    letter-spacing: 0.05em;
-    color: var(--white);
-    min-width: 0; text-align: center;
-    cursor: pointer;
-  }
-  .time-display-text.editable:hover { color: var(--gold); }
-  .time-display-text span { color: var(--gold-dim); }
-
-  /* Action buttons row */
-  .action-row {
-    display: flex; gap: 0.8rem; align-items: center;
-    flex-wrap: wrap; justify-content: center;
-    width: 100%; max-width: 480px;
-  }
-
-  .btn {
-    background: none; border: 1px solid var(--border);
-    color: var(--white-dim); font-family: 'Space Mono', monospace;
-    font-size: 0.6rem; letter-spacing: 0.2em;
-    padding: 0.8rem 1.4rem; cursor: pointer; border-radius: 2px;
-    text-transform: uppercase; transition: all 0.25s;
-    flex: 1; min-width: 80px; max-width: 160px; text-align: center;
-  }
-  .btn:hover { color: var(--white); border-color: var(--white-dim); }
-  .btn.start { border-color: var(--green); color: var(--green); }
-  .btn.start:hover { background: rgba(82,200,122,0.1); }
-  .btn.pause { border-color: var(--gold-dim); color: var(--gold); }
-  .btn.pause:hover { background: rgba(200,169,110,0.1); }
-  .btn.stop { border-color: var(--red); color: var(--red); }
-  .btn.stop:hover { background: rgba(224,82,82,0.1); }
-  .btn.reset { border-color: var(--border); }
-  .btn.break-btn { border-color: var(--blue); color: var(--blue); }
-  .btn.break-btn:hover { background: rgba(82,122,224,0.1); }
-
-  .break-row {
-    display: flex; align-items: center; gap: 0.8rem; margin-top: 1.2rem;
-    font-size: 0.6rem; letter-spacing: 0.2em; color: var(--white-dim);
-  }
-
-  /* Status text */
-  .status-text {
-    font-size: 0.6rem; letter-spacing: 0.3em; color: var(--white-dim);
-    text-transform: uppercase; margin-top: 1.5rem; height: 1em;
-    transition: color 0.3s;
-  }
-  .status-text.running { color: var(--green); }
-  .status-text.paused { color: var(--gold); }
-  .status-text.done { color: var(--red); animation: pulse-status 1s ease infinite alternate; }
-  @keyframes pulse-status { to { opacity: 0.4; } }
-
-  /* ── SAND CLOCK PAGE ── */
-  #sandclock-page .timer-visual {
-    margin-bottom: 2.5rem;
-    position: relative;
-  }
-
-  .hourglass-wrap {
-    position: relative; width: 120px; height: 180px;
-    margin: 0 auto;
-  }
-
-  .hourglass-svg {
-    width: 120px; height: 180px;
-  }
-
-  .sand-top, .sand-bottom {
-    transition: d 0.1s linear;
-  }
-
-  /* ── ANALOG PAGE ── */
-  #analog-page .clock-face {
-    width: 260px; height: 260px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    background: var(--surface);
-    position: relative;
-    margin-bottom: 2.5rem;
-    box-shadow: 0 0 60px rgba(200,169,110,0.05), inset 0 0 30px rgba(0,0,0,0.5);
-    cursor: pointer;
-  }
-  .clock-face::before {
-    content: '';
-    position: absolute; inset: 8px;
-    border-radius: 50%;
-    border: 1px solid var(--border);
-  }
-
-  .clock-center {
-    position: absolute; width: 10px; height: 10px;
-    background: var(--gold); border-radius: 50%;
-    top: 50%; left: 50%; transform: translate(-50%, -50%);
-    z-index: 10;
-  }
-
-  .hand {
-    position: absolute; bottom: 50%; left: 50%;
-    transform-origin: bottom center;
-    border-radius: 4px 4px 0 0;
-  }
-  .hour-hand {
-    width: 3px; height: 70px;
-    background: var(--white);
-    margin-left: -1.5px;
-  }
-  .minute-hand {
-    width: 2px; height: 95px;
-    background: var(--white-dim);
-    margin-left: -1px;
-  }
-  .second-hand-el {
-    width: 1px; height: 105px;
-    background: var(--gold);
-    margin-left: -0.5px;
-  }
-
-  .clock-tick {
-    position: absolute; background: var(--border);
-    left: 50%; top: 50%;
-    transform-origin: 0 0;
-  }
-
-  /* Drag instruction */
-  .drag-hint {
-    font-size: 0.55rem; letter-spacing: 0.2em; color: var(--white-dim);
-    text-align: center; margin-bottom: 1rem; text-transform: uppercase;
-    width: 100%;
-  }
-
-  /* ── DIGITAL PAGE ── */
-  #digital-page .digital-display {
-    display: flex; align-items: flex-end;
-    gap: clamp(0.4rem, 1.5vw, 1.2rem);
-    margin-bottom: 2rem;
-    flex-wrap: nowrap;
-    justify-content: center;
-    max-width: 600px;
-    width: 100%;
-    padding: 0 1rem;
-  }
-
-  .digit-group {
-    display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
-    min-width: 0; flex-shrink: 1;
-  }
-  .digit-label {
-    font-size: 0.5rem; letter-spacing: 0.2em; color: var(--white-dim); text-transform: uppercase;
-  }
-
-  .seven-seg {
-    font-family: 'Space Mono', monospace;
-    font-size: clamp(1.4rem, 3.5vw, 3.5rem);
-    color: var(--white);
-    text-shadow: 0 0 20px rgba(200,169,110,0.3);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 0.15em 0.3em;
-    width: clamp(2rem, 6.5vw, 5.5rem);
-    text-align: center;
-    cursor: pointer; transition: color 0.2s, text-shadow 0.2s;
-    position: relative;
-  }
-  .seven-seg::before {
-    content: attr(data-ghost);
-    position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    color: rgba(200,169,110,0.08);
-    font-size: inherit; padding: 0.15em 0.3em;
-  }
-  .seven-seg:hover { color: var(--gold); text-shadow: 0 0 30px rgba(200,169,110,0.5); }
-  .seven-seg.editing { color: var(--gold); border-color: var(--gold); box-shadow: 0 0 20px rgba(200,169,110,0.2); }
-  .seven-seg.running { animation: seg-glow 2s ease infinite alternate; }
-  @keyframes seg-glow {
-    from { text-shadow: 0 0 10px rgba(200,169,110,0.2); }
-    to   { text-shadow: 0 0 40px rgba(200,169,110,0.6); }
-  }
-
-  .colon {
-    font-size: clamp(1rem, 2.5vw, 2.8rem);
-    color: var(--gold-dim); line-height: 1;
-    padding-bottom: 1.5rem;
-    flex-shrink: 0;
-  }
-  .colon.blink { animation: blink 1s step-end infinite; }
-
-  /* Spin arrows */
-  .spin-arrows {
-    display: flex; gap: 0.25rem; align-items: center;
-  }
-  .spin-btn {
-    background: none; border: 1px solid var(--border);
-    color: var(--white-dim);
-    width: clamp(22px, 6vw, 30px); height: clamp(22px, 6vw, 30px);
-    border-radius: 2px; cursor: pointer; font-size: 0.75rem;
-    display: flex; align-items: center; justify-content: center;
-    transition: all 0.2s; font-family: 'Space Mono', monospace;
-    flex-shrink: 0;
-  }
-  .spin-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
-
-  /* Progress ring */
-  .progress-ring {
-    position: absolute; inset: -16px;
-    width: calc(100% + 32px); height: calc(100% + 32px);
-    transform: rotate(-90deg);
-    pointer-events: none;
-  }
-  .progress-ring circle {
-    fill: none; stroke: var(--gold); stroke-width: 1.5;
-    stroke-linecap: round;
-    transition: stroke-dashoffset 1s linear;
-  }
-
-  /* ── BREAK MODAL ── */
-  .modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.85);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 1000; opacity: 0; pointer-events: none;
-    transition: opacity 0.3s;
-    backdrop-filter: blur(8px);
-  }
-  .modal-overlay.open { opacity: 1; pointer-events: all; }
-  .modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 4px; padding: 3rem;
-    text-align: center; max-width: 380px; width: 90%;
-    transform: translateY(20px); transition: transform 0.3s var(--transition);
-  }
-  .modal-overlay.open .modal { transform: translateY(0); }
-  .modal h2 {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 2rem; font-weight: 300;
-    margin-bottom: 0.5rem; color: var(--blue);
-  }
-  .modal p { font-size: 0.65rem; letter-spacing: 0.2em; color: var(--white-dim); margin-bottom: 2rem; }
-  .break-timer-display {
-    font-size: 3rem; font-family: 'Space Mono', monospace;
-    color: var(--blue); margin-bottom: 2rem;
-    text-shadow: 0 0 30px rgba(82,122,224,0.4);
-  }
-  .break-presets { display: flex; gap: 0.8rem; justify-content: center; margin-bottom: 1.5rem; }
-  .preset-btn {
-    background: none; border: 1px solid var(--border);
-    color: var(--white-dim); font-family: 'Space Mono', monospace;
-    font-size: 0.6rem; letter-spacing: 0.15em;
-    padding: 0.5rem 1rem; cursor: pointer; border-radius: 2px;
-    transition: all 0.2s;
-  }
-  .preset-btn:hover { border-color: var(--blue); color: var(--blue); }
-  .preset-btn.active { border-color: var(--blue); color: var(--blue); background: rgba(82,122,224,0.1); }
-
-  /* Notification bell */
-  .notify {
-    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
-    background: var(--surface); border: 1px solid var(--gold);
-    color: var(--gold); font-family: 'Space Mono', monospace;
-    font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase;
-    padding: 0.8rem 2rem; border-radius: 2px;
-    opacity: 0; pointer-events: none;
-    transition: opacity 0.5s, transform 0.5s;
-    z-index: 2000;
-    transform: translateX(-50%) translateY(10px);
-  }
-  .notify.show {
-    opacity: 1; transform: translateX(-50%) translateY(0);
-  }
-
-  /* Decorative corner lines */
-  .corner {
-    position: absolute; width: 30px; height: 30px;
-    pointer-events: none;
-  }
-  .corner-tl { top: 1.5rem; left: 1.5rem; border-top: 1px solid var(--border); border-left: 1px solid var(--border); }
-  .corner-tr { top: 1.5rem; right: 1.5rem; border-top: 1px solid var(--border); border-right: 1px solid var(--border); }
-  .corner-bl { bottom: 1.5rem; left: 1.5rem; border-bottom: 1px solid var(--border); border-left: 1px solid var(--border); }
-  .corner-br { bottom: 1.5rem; right: 1.5rem; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
-
-  /* Radial vignette */
-  .vignette {
-    position: fixed; inset: 0; pointer-events: none; z-index: 1;
-    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%);
-  }
-
-  /* ── COMPLETION ANIMATION ── */
-  @keyframes done-flash {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-  .done-animate { animation: done-flash 0.8s ease 3; }
-
-  /* ── MOBILE RESPONSIVE ── */
-  @media (max-width: 600px) {
-    /* Home */
-    /* Header */
-    .page-header {
-      grid-template-columns: auto 1fr auto;
-      padding: 0.7rem 0.75rem 0.4rem;
-      gap: 0.25rem;
-    }
-    .page-title { font-size: 0.52rem; letter-spacing: 0.18em; overflow: hidden; text-overflow: ellipsis; }
-    .back-btn  { font-size: 0.44rem; padding: 0.4rem 0.6rem; letter-spacing: 0.07em; }
-    .music-btn { font-size: 0.44rem; padding: 0.4rem 0.6rem; letter-spacing: 0.07em; }
-
-    /* Page body */
-    .page-body { padding: 0.8rem 0.8rem 1.5rem; }
-
-    /* Sand clock */
-    .hourglass-wrap { width: min(36vw, 120px); height: min(54vw, 180px); }
-    .hourglass-svg  { width: 100%; height: 100%; }
-
-    /* Analog clock */
-    #analog-page .clock-face { width: min(74vw, 270px); height: min(74vw, 270px); }
-    .hour-hand      { height: min(27vw, 72px); }
-    .minute-hand    { height: min(36vw, 96px); }
-    .second-hand-el { height: min(39vw, 106px); }
-    .drag-hint { font-size: 0.46rem; margin-bottom: 0.6rem; }
-
-    /* Time text display */
-    .time-display-text { font-size: clamp(1.4rem, 6vw, 2rem); min-width: 0; }
-    .time-controls { gap: 0.6rem; margin-bottom: 1rem; }
-    .adj-btn { width: 30px; height: 30px; font-size: 1rem; }
-
-    /* Digital display */
-    #digital-page .digital-display { gap: clamp(0.1rem, 1vw, 0.35rem); margin-bottom: 1rem; padding: 0 0.25rem; }
-    .seven-seg { font-size: clamp(1.3rem, 9.5vw, 2.4rem); padding: 0.1em 0.22em; width: clamp(1.9rem, 15.5vw, 3.8rem); }
-    .colon { font-size: clamp(1rem, 5.5vw, 1.9rem); padding-bottom: 1rem; }
-    .spin-btn { width: clamp(20px, 5.5vw, 26px); height: clamp(20px, 5.5vw, 26px); font-size: 0.65rem; }
-    .spin-arrows { gap: 0.18rem; }
-    .digit-label { font-size: 0.4rem; letter-spacing: 0.1em; }
-
-    /* Buttons */
-    .btn { font-size: 0.46rem; padding: 0.65rem 0.55rem; letter-spacing: 0.07em; min-width: 68px; }
-    .action-row { gap: 0.4rem; max-width: 100%; }
-    .status-text { font-size: 0.48rem; margin-top: 0.8rem; }
-
-    /* Corners */
-    .corner { width: 14px; height: 14px; }
-    .corner-tl { top: 0.4rem; left: 0.4rem; }
-    .corner-tr { top: 0.4rem; right: 0.4rem; }
-    .corner-bl { bottom: 0.4rem; left: 0.4rem; }
-    .corner-br { bottom: 0.4rem; right: 0.4rem; }
-
-    /* Modal */
-    .modal { padding: 1.5rem 1rem; }
-    .modal h2 { font-size: 1.5rem; }
-    .break-timer-display { font-size: 2rem; margin-bottom: 1.2rem; }
-    .break-presets { gap: 0.4rem; flex-wrap: wrap; justify-content: center; }
-    .preset-btn { padding: 0.4rem 0.6rem; font-size: 0.48rem; }
-    .notify { font-size: 0.5rem; padding: 0.6rem 1.2rem; width: 90%; text-align: center; }
-  }
-
-  /* Very small phones */
-  @media (max-width: 360px) {
-    .page-title { letter-spacing: 0.1em; font-size: 0.45rem; }
-    .back-btn  { font-size: 0.4rem; padding: 0.35rem 0.45rem; }
-    .music-btn { font-size: 0.4rem; padding: 0.35rem 0.45rem; }
-    .seven-seg { font-size: clamp(1.1rem, 9vw, 1.9rem); width: clamp(1.7rem, 14.5vw, 3.2rem); }
-    .colon { font-size: clamp(0.9rem, 5vw, 1.5rem); }
-    .btn { font-size: 0.4rem; padding: 0.55rem 0.45rem; min-width: 56px; }
-  }
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div class="vignette"></div>
+<button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">◐ Theme</button>
+<button class="stats-btn" onclick="openStats()" title="Session history">▦ Stats</button>
+<div class="kbd-hint" id="kbd-hint">
+  <span class="kbd-key">Space</span> play/pause &nbsp;
+  <span class="kbd-key">R</span> reset &nbsp;
+  <span class="kbd-key">D</span> deep work &nbsp;
+  <span class="kbd-key">Esc</span> home
+</div>
+<canvas id="share-canvas" width="800" height="400"></canvas>
 
 <!-- ════════════════════ HOME ════════════════════ -->
 <div class="page active" id="home">
@@ -653,13 +46,13 @@
   <div class="home-cards">
 
     <!-- Sand Clock -->
-    <div class="home-card" onclick="navigate('sandclock-page')" title="Sand Clock Timer">
+    <div class="home-card" onclick="navigate('sandclock-page')" onkeydown="if(event.key==='Enter'||event.key===' ')navigate('sandclock-page')" role="button" tabindex="0" title="Sand Clock Timer">
       <div class="card-icon">
         <svg class="sandclock-svg" width="60" height="80" viewBox="0 0 60 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M8 4h44M8 76h44" stroke="#f0ece4" stroke-width="2" stroke-linecap="round"/>
-          <path d="M12 8 L30 38 L48 8 Z" fill="#f0ece4" fill-opacity="0.15" stroke="#f0ece4" stroke-width="1.5"/>
-          <path d="M12 72 L30 42 L48 72 Z" fill="#f0ece4" fill-opacity="0.15" stroke="#f0ece4" stroke-width="1.5"/>
-          <path d="M20 26 L30 38 L40 26" fill="#f0ece4" fill-opacity="0.4" stroke="none"/>
+          <path d="M8 4h44M8 76h44" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M12 8 L30 38 L48 8 Z" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M12 72 L30 42 L48 72 Z" fill="currentColor" fill-opacity="0.15" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M20 26 L30 38 L40 26" fill="currentColor" fill-opacity="0.4" stroke="none"/>
           <path d="M20 54 L30 42 L40 54 L38 72 L22 72 Z" fill="#c8a96e" fill-opacity="0.5" stroke="none"/>
           <line x1="30" y1="38" x2="30" y2="42" stroke="#c8a96e" stroke-width="1.5" opacity="0.7"/>
         </svg>
@@ -668,7 +61,7 @@
     </div>
 
     <!-- Digital Timer -->
-    <div class="home-card" onclick="navigate('digital-page')" title="Digital Timer" style="border-color: var(--gold-dim);">
+    <div class="home-card" onclick="navigate('digital-page')" onkeydown="if(event.key==='Enter'||event.key===' ')navigate('digital-page')" role="button" tabindex="0" title="Digital Timer" style="border-color: var(--gold-dim);">
       <div class="card-icon" style="width:80px; height:50px;">
         <svg width="100%" height="100%" viewBox="0 0 120 60" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="4" y="4" width="112" height="52" rx="6" stroke="#f0ece4" stroke-width="1.5" fill="#1a1a1a"/>
@@ -682,7 +75,7 @@
     </div>
 
     <!-- Analog Timer -->
-    <div class="home-card" onclick="navigate('analog-page')" title="Analog Timer">
+    <div class="home-card" onclick="navigate('analog-page')" onkeydown="if(event.key==='Enter'||event.key===' ')navigate('analog-page')" role="button" tabindex="0" title="Analog Timer">
       <div class="card-icon">
         <svg width="70" height="70" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="35" cy="35" r="32" stroke="#f0ece4" stroke-width="1.5" fill="#111"/>
@@ -715,29 +108,68 @@
   <div class="page-header">
     <button class="back-btn" onclick="navigate('home')">← Home</button>
     <span class="page-title">Sand Clock</span>
-    <button class="music-btn" id="sc-music-btn" onclick="toggleTick(this)">🔔 Tick: Off</button>
+    <div style="display:flex;gap:0.4rem;grid-column:3;justify-self:end;align-items:center;">
+      <button class="deep-work-btn" onclick="enterDeepWork('sc')">⬛ Deep Work</button>
+      <button class="music-btn" id="sc-music-btn" onclick="toggleTick(this)">🔔 Tick: Off</button>
+    </div>
   </div>
 
   <div class="page-body">
-    <div class="timer-visual" style="margin-bottom:1.5rem;">
+    <!-- Session Labels -->
+    <div class="label-row" id="sc-labels">
+      <button class="label-chip active" onclick="setLabel('sc','Focus',this)">Focus</button>
+      <button class="label-chip" onclick="setLabel('sc','Deep Work',this)">Deep Work</button>
+      <button class="label-chip" onclick="setLabel('sc','Reading',this)">Reading</button>
+      <button class="label-chip" onclick="setLabel('sc','Study',this)">Study</button>
+      <button class="label-chip" onclick="setLabel('sc','Writing',this)">Writing</button>
+    </div>
+    <input type="text" id="task-input-sc" class="task-input" placeholder="What are you focusing on?" autocomplete="off" />
+    <!-- Sound Picker -->
+    <div class="sound-row" id="sc-sounds">
+      <button class="sound-chip active" onclick="setSound('tick',this)">🔔 Tick</button>
+      <button class="sound-chip" onclick="setSound('rain',this)">🌧 Rain</button>
+      <button class="sound-chip" onclick="setSound('river',this)">🏞 River</button>
+      <button class="sound-chip" onclick="setSound('brown',this)">🌊 Brown</button>
+      <button class="sound-chip" onclick="setSound('cafe',this)">☕ Café</button>
+      <button class="sound-chip" onclick="setSound('gamma',this)">〜 Gamma</button>
+      <button class="sound-chip" onclick="setSound('piano',this)">🎹 Piano</button>
+      <button class="sound-chip" onclick="setSound('off',this)">✕ Off</button>
+    </div>
+    <div class="volume-wrap">
+      <span class="vol-icon">🔉</span>
+      <input type="range" class="master-volume" min="0" max="1" step="0.05" value="0.5" oninput="setVolume(this.value)">
+    </div>
+    <!-- Pomodoro -->
+    <div class="pomo-bar">
+      <button class="pomo-toggle" id="sc-pomo" onclick="togglePomo('sc',this)">🍅 Pomo</button>
+      <div class="pomo-dots" id="sc-pomo-dots"></div>
+    </div>
+
+    <div class="timer-visual" style="margin-bottom:1.2rem;">
       <div class="hourglass-wrap">
         <svg class="hourglass-svg" id="hg-svg" viewBox="0 0 120 180">
-          <rect x="15" y="4" width="90" height="8" rx="3" fill="#f0ece4" fill-opacity="0.9"/>
-          <rect x="15" y="168" width="90" height="8" rx="3" fill="#f0ece4" fill-opacity="0.9"/>
-          <path d="M20 12 L100 12 L65 88 L65 92 L100 168 L20 168 L55 92 L55 88 Z" fill="none" stroke="#2a2a2a" stroke-width="1.5"/>
-          <clipPath id="hg-top-clip"><path d="M20 12 L100 12 L65 88 L55 88 Z"/></clipPath>
-          <rect id="hg-sand-top" x="20" y="12" width="80" height="76" fill="#c8a96e" fill-opacity="0.6" clip-path="url(#hg-top-clip)"/>
-          <clipPath id="hg-bottom-clip"><path d="M55 92 L65 92 L100 168 L20 168 Z"/></clipPath>
-          <rect id="hg-sand-bottom" x="20" y="168" width="80" height="0" fill="#c8a96e" fill-opacity="0.75" clip-path="url(#hg-bottom-clip)"/>
-          <line id="hg-stream" x1="60" y1="88" x2="60" y2="92" stroke="#c8a96e" stroke-width="2" opacity="0"/>
-          <path d="M28 15 L45 80" stroke="white" stroke-width="1" stroke-opacity="0.08" stroke-linecap="round"/>
+          <!-- Top and bottom bars — use currentColor so they show in light mode too -->
+          <rect x="15" y="4"   width="90" height="8" rx="3" fill="currentColor" fill-opacity="0.85"/>
+          <rect x="15" y="168" width="90" height="8" rx="3" fill="currentColor" fill-opacity="0.85"/>
+          <!-- Hourglass outline -->
+          <path d="M20 12 L100 12 L65 88 L65 92 L100 168 L20 168 L55 92 L55 88 Z" fill="none" stroke="currentColor" stroke-opacity="0.5" stroke-width="1.5"/>
+          <!-- Sand — paths driven entirely by JS; no clip needed -->
+          <path id="hg-sand-top"    fill="#c8a96e" fill-opacity="0.7" d=""/>
+          <path id="hg-sand-bottom" fill="#c8a96e" fill-opacity="0.85" d=""/>
+          <line id="hg-stream" x1="60" y1="88" x2="60" y2="92" stroke="#c8a96e" stroke-width="2.5" opacity="0" stroke-linecap="round"/>
+          <!-- Highlight glint -->
+          <path d="M28 15 L42 78" stroke="white" stroke-width="1" stroke-opacity="0.08" stroke-linecap="round"/>
         </svg>
       </div>
     </div>
 
     <div class="time-controls">
       <button class="adj-btn" onclick="adjustSC(-60)">−</button>
-      <div class="time-display-text editable" id="sc-display" onclick="promptSetTime('sc')">25<span>:</span>00</div>
+      <div class="time-input-wrap">
+        <div class="time-display-text" id="sc-display" onclick="showInlineInput('sc')">25<span>:</span>00</div>
+        <input class="time-inline-input" id="sc-inline" type="text" placeholder="mm:ss" onblur="applyInlineInput('sc')" onkeydown="inlineKey(event,'sc')"/>
+        <span class="edit-hint" onclick="showInlineInput('sc')">✎</span>
+      </div>
       <button class="adj-btn" onclick="adjustSC(60)">+</button>
     </div>
 
@@ -747,6 +179,9 @@
       <button class="btn stop" onclick="stopTimer('sc')">Stop</button>
       <button class="btn reset" onclick="resetTimer('sc')">Reset</button>
       <button class="btn break-btn" onclick="openBreak('sc')">Break</button>
+    </div>
+    <div style="display:flex;gap:0.6rem;justify-content:center;margin-top:0.8rem;">
+      <button class="share-btn" onclick="shareSession('sc')">↗ Share</button>
     </div>
     <div class="status-text" id="sc-status">Ready</div>
   </div>
@@ -762,10 +197,42 @@
   <div class="page-header">
     <button class="back-btn" onclick="navigate('home')">← Home</button>
     <span class="page-title">Analog Timer</span>
-    <button class="music-btn" id="an-music-btn" onclick="toggleTick(this)">🔔 Tick: Off</button>
+    <div style="display:flex;gap:0.4rem;grid-column:3;justify-self:end;align-items:center;">
+      <button class="deep-work-btn" onclick="enterDeepWork('an')">⬛ Deep Work</button>
+      <button class="music-btn" id="an-music-btn" onclick="toggleTick(this)">🔔 Tick: Off</button>
+    </div>
   </div>
 
   <div class="page-body">
+    <!-- Session Labels -->
+    <div class="label-row" id="an-labels">
+      <button class="label-chip active" onclick="setLabel('an','Focus',this)">Focus</button>
+      <button class="label-chip" onclick="setLabel('an','Deep Work',this)">Deep Work</button>
+      <button class="label-chip" onclick="setLabel('an','Reading',this)">Reading</button>
+      <button class="label-chip" onclick="setLabel('an','Study',this)">Study</button>
+      <button class="label-chip" onclick="setLabel('an','Writing',this)">Writing</button>
+    </div>
+    <input type="text" id="task-input-an" class="task-input" placeholder="What are you focusing on?" autocomplete="off" />
+    <!-- Sound Picker -->
+    <div class="sound-row" id="an-sounds">
+      <button class="sound-chip active" onclick="setSound('tick',this)">🔔 Tick</button>
+      <button class="sound-chip" onclick="setSound('rain',this)">🌧 Rain</button>
+      <button class="sound-chip" onclick="setSound('river',this)">🏞 River</button>
+      <button class="sound-chip" onclick="setSound('brown',this)">🌊 Brown</button>
+      <button class="sound-chip" onclick="setSound('cafe',this)">☕ Café</button>
+      <button class="sound-chip" onclick="setSound('gamma',this)">〜 Gamma</button>
+      <button class="sound-chip" onclick="setSound('piano',this)">🎹 Piano</button>
+      <button class="sound-chip" onclick="setSound('off',this)">✕ Off</button>
+    </div>
+    <div class="volume-wrap">
+      <span class="vol-icon">🔉</span>
+      <input type="range" class="master-volume" min="0" max="1" step="0.05" value="0.5" oninput="setVolume(this.value)">
+    </div>
+    <!-- Pomodoro -->
+    <div class="pomo-bar">
+      <button class="pomo-toggle" id="an-pomo" onclick="togglePomo('an',this)">🍅 Pomo</button>
+      <div class="pomo-dots" id="an-pomo-dots"></div>
+    </div>
     <p class="drag-hint">Drag minute hand · +/− to adjust</p>
 
     <div style="position:relative; margin-bottom:1.2rem; flex-shrink:0;">
@@ -783,7 +250,11 @@
 
     <div class="time-controls">
       <button class="adj-btn" onclick="adjustAN(-60)">−</button>
-      <div class="time-display-text" id="an-display">25<span>:</span>00</div>
+      <div class="time-input-wrap">
+        <div class="time-display-text" id="an-display" onclick="showInlineInput('an')">25<span>:</span>00</div>
+        <input class="time-inline-input" id="an-inline" type="text" placeholder="mm:ss" onblur="applyInlineInput('an')" onkeydown="inlineKey(event,'an')"/>
+        <span class="edit-hint" onclick="showInlineInput('an')">✎</span>
+      </div>
       <button class="adj-btn" onclick="adjustAN(60)">+</button>
     </div>
 
@@ -793,6 +264,9 @@
       <button class="btn stop" onclick="stopTimer('an')">Stop</button>
       <button class="btn reset" onclick="resetTimer('an')">Reset</button>
       <button class="btn break-btn" onclick="openBreak('an')">Break</button>
+    </div>
+    <div style="display:flex;gap:0.6rem;justify-content:center;margin-top:0.8rem;">
+      <button class="share-btn" onclick="shareSession('an')">↗ Share</button>
     </div>
     <div class="status-text" id="an-status">Drag to set — Ready</div>
   </div>
@@ -808,17 +282,49 @@
   <div class="page-header">
     <button class="back-btn" onclick="navigate('home')">← Home</button>
     <span class="page-title">Digital Timer</span>
-    <button class="music-btn" id="di-music-btn" onclick="toggleTick(this)">🔔 Tick: Off</button>
+    <div style="display:flex;gap:0.4rem;grid-column:3;justify-self:end;align-items:center;">
+      <button class="deep-work-btn" onclick="enterDeepWork('di')">⬛ Deep Work</button>
+      <button class="music-btn" id="di-music-btn" onclick="toggleTick(this)">🔔 Tick: Off</button>
+    </div>
   </div>
 
   <div class="page-body">
-    <div class="digital-display" id="di-display-wrap">
+    <!-- Session Labels -->
+    <div class="label-row" id="di-labels">
+      <button class="label-chip active" onclick="setLabel('di','Focus',this)">Focus</button>
+      <button class="label-chip" onclick="setLabel('di','Deep Work',this)">Deep Work</button>
+      <button class="label-chip" onclick="setLabel('di','Reading',this)">Reading</button>
+      <button class="label-chip" onclick="setLabel('di','Study',this)">Study</button>
+      <button class="label-chip" onclick="setLabel('di','Writing',this)">Writing</button>
+    </div>
+    <input type="text" id="task-input-di" class="task-input" placeholder="What are you focusing on?" autocomplete="off" />
+    <!-- Sound Picker -->
+    <div class="sound-row" id="di-sounds">
+      <button class="sound-chip active" onclick="setSound('tick',this)">🔔 Tick</button>
+      <button class="sound-chip" onclick="setSound('rain',this)">🌧 Rain</button>
+      <button class="sound-chip" onclick="setSound('river',this)">🏞 River</button>
+      <button class="sound-chip" onclick="setSound('brown',this)">🌊 Brown</button>
+      <button class="sound-chip" onclick="setSound('cafe',this)">☕ Café</button>
+      <button class="sound-chip" onclick="setSound('gamma',this)">〜 Gamma</button>
+      <button class="sound-chip" onclick="setSound('piano',this)">🎹 Piano</button>
+      <button class="sound-chip" onclick="setSound('off',this)">✕ Off</button>
+    </div>
+    <div class="volume-wrap">
+      <span class="vol-icon">🔉</span>
+      <input type="range" class="master-volume" min="0" max="1" step="0.05" value="0.5" oninput="setVolume(this.value)">
+    </div>
+    <!-- Pomodoro -->
+    <div class="pomo-bar">
+      <button class="pomo-toggle" id="di-pomo" onclick="togglePomo('di',this)">🍅 Pomo</button>
+      <div class="pomo-dots" id="di-pomo-dots"></div>
+    </div>
+    <div class="digital-display" id="di-display" style="width:100%; justify-content:center;">
       <div class="digit-group">
         <div class="spin-arrows">
           <button class="spin-btn" onclick="adjustDigit('hr',1)">▲</button>
           <button class="spin-btn" onclick="adjustDigit('hr',-1)">▼</button>
         </div>
-        <div class="seven-seg" id="di-hr" data-ghost="8" onclick="focusDigit('hr')">00</div>
+        <div class="seven-seg" id="di-hr" data-ghost="8" tabindex="0" onclick="focusDigit('hr')" onkeydown="digitKey(event,'hr')">00</div>
         <div class="digit-label">hr</div>
       </div>
       <div class="colon">:</div>
@@ -827,7 +333,7 @@
           <button class="spin-btn" onclick="adjustDigit('min',1)">▲</button>
           <button class="spin-btn" onclick="adjustDigit('min',-1)">▼</button>
         </div>
-        <div class="seven-seg" id="di-min" data-ghost="88" onclick="focusDigit('min')">25</div>
+        <div class="seven-seg" id="di-min" data-ghost="88" tabindex="0" onclick="focusDigit('min')" onkeydown="digitKey(event,'min')">25</div>
         <div class="digit-label">min</div>
       </div>
       <div class="colon" id="di-colon">:</div>
@@ -836,7 +342,7 @@
           <button class="spin-btn" onclick="adjustDigit('sec',1)">▲</button>
           <button class="spin-btn" onclick="adjustDigit('sec',-1)">▼</button>
         </div>
-        <div class="seven-seg" id="di-sec" data-ghost="88" onclick="focusDigit('sec')">00</div>
+        <div class="seven-seg" id="di-sec" data-ghost="88" tabindex="0" onclick="focusDigit('sec')" onkeydown="digitKey(event,'sec')">00</div>
         <div class="digit-label">sec</div>
       </div>
     </div>
@@ -848,7 +354,28 @@
       <button class="btn reset" onclick="resetTimer('di')">Reset</button>
       <button class="btn break-btn" onclick="openBreak('di')">Break</button>
     </div>
+    <div style="display:flex;gap:0.6rem;justify-content:center;margin-top:0.8rem;">
+      <button class="share-btn" onclick="shareSession('di')">↗ Share</button>
+    </div>
     <div class="status-text" id="di-status">Ready</div>
+  </div>
+</div>
+
+<!-- ════════════════════ STATS PANEL ════════════════════ -->
+<div class="stats-overlay" id="stats-overlay">
+  <div class="stats-panel">
+    <h2>Sessions</h2>
+    <div class="stats-grid">
+      <div class="stat-box"><span class="stat-val" id="stat-today">0h 0m</span><span class="stat-lbl">Today</span></div>
+      <div class="stat-box"><span class="stat-val" id="stat-week">0h 0m</span><span class="stat-lbl">This Week</span></div>
+      <div class="stat-box"><span class="stat-val" id="stat-sessions">0</span><span class="stat-lbl">Sessions</span></div>
+      <div class="stat-box"><span class="stat-val" id="stat-longest">—</span><span class="stat-lbl">Longest</span></div>
+    </div>
+    <div class="stats-history" id="stats-history"></div>
+    <div class="stats-actions">
+      <button class="btn reset" onclick="clearStats()">Clear All</button>
+      <button class="btn start" onclick="closeStats()">Done</button>
+    </div>
   </div>
 </div>
 
@@ -858,487 +385,61 @@
     <h2>Take a Break</h2>
     <p>Step away. Rest your eyes. Breathe.</p>
     <div class="break-timer-display" id="break-display">05:00</div>
+
+    <!-- Presets -->
     <div class="break-presets">
       <button class="preset-btn active" onclick="setBreak(5, this)">5 min</button>
       <button class="preset-btn" onclick="setBreak(10, this)">10 min</button>
       <button class="preset-btn" onclick="setBreak(15, this)">15 min</button>
+      <button class="preset-btn" onclick="setBreak(20, this)">20 min</button>
     </div>
-    <div class="action-row" style="justify-content:center; gap:0.8rem;">
+
+    <!-- Slider -->
+    <div class="break-slider-wrap">
+      <input class="break-slider" id="break-slider" type="range" min="1" max="60" value="5" oninput="onBreakSlider(this.value)"/>
+      <div class="break-slider-labels">
+        <span>1 min</span><span>15 min</span><span>30 min</span><span>60 min</span>
+      </div>
+    </div>
+
+    <!-- Manual type -->
+    <div class="break-custom-row">
+      <span>Custom:</span>
+      <input class="break-manual-input" id="break-manual" type="text" placeholder="mm:ss" onchange="onBreakManual(this.value)" onkeydown="if(event.key==='Enter') onBreakManual(this.value)"/>
+      <span>or minutes</span>
+    </div>
+
+    <div class="action-row" style="justify-content:center; gap:0.8rem; margin-top:1.5rem;">
       <button class="btn break-btn" onclick="startBreak()">Start Break</button>
       <button class="btn reset" onclick="closeBreak()">Close</button>
     </div>
   </div>
 </div>
 
+<!-- ════════════════════ DEEP WORK OVERLAY ════════════════════ -->
+<div id="deep-work-overlay">
+  <div class="dw-label" id="dw-label">Deep Work — Sand Clock</div>
+  <div class="dw-time" id="dw-time">25:00</div>
+  <div class="dw-progress-bar">
+    <div class="dw-progress-fill" id="dw-progress" style="width:0%"></div>
+  </div>
+  <div class="dw-controls">
+    <button class="dw-btn" onclick="dwToggle()">⏸ Pause</button>
+    <button class="dw-btn" onclick="exitDeepWork()">✕ Exit</button>
+  </div>
+</div>
+
 <!-- Notification -->
 <div class="notify" id="notify"></div>
 
-<script>
-/* ═══════════════════════════════════════
-   STATE
-═══════════════════════════════════════ */
-const state = {
-  sc: { total: 25*60, remaining: 25*60, interval: null, running: false, paused: false },
-  an: { total: 25*60, remaining: 25*60, interval: null, running: false, paused: false },
-  di: { total: 25*60, remaining: 25*60, interval: null, running: false, paused: false },
-};
-
-const MAX_SECS = 9*3600 + 59*60 + 59;
-
-let currentPage = 'home';
-let breakInterval = null;
-let breakRemaining = 0;
-let breakSourceTimer = null;
-
-/* ═══════════════════════════════════════
-   NAVIGATION
-═══════════════════════════════════════ */
-function navigate(target) {
-  const current = document.querySelector('.page.active');
-  if (current) {
-    current.classList.add('exit');
-    setTimeout(() => current.classList.remove('active', 'exit'), 600);
-  }
-  setTimeout(() => {
-    document.getElementById(target).classList.add('active');
-    currentPage = target;
-  }, 200);
-}
-
-/* ═══════════════════════════════════════
-   FORMAT
-═══════════════════════════════════════ */
-function fmt(secs) {
-  const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), s = secs % 60;
-  if (h > 0) return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-}
-function fmtParts(secs) {
-  return {
-    h: String(Math.floor(secs / 3600)).padStart(2,'0'),
-    m: String(Math.floor((secs % 3600) / 60)).padStart(2,'0'),
-    s: String(secs % 60).padStart(2,'0')
-  };
-}
-
-/* ═══════════════════════════════════════
-   DISPLAY UPDATES
-═══════════════════════════════════════ */
-function updateSCDisplay(secs) {
-  const p = fmtParts(secs);
-  const h = parseInt(p.h);
-  if (h > 0) {
-    document.getElementById('sc-display').innerHTML = `${p.h}<span>:</span>${p.m}<span>:</span>${p.s}`;
-  } else {
-    document.getElementById('sc-display').innerHTML = `${p.m}<span>:</span>${p.s}`;
-  }
-}
-function updateANDisplay(secs) {
-  const p = fmtParts(secs);
-  const h = parseInt(p.h);
-  if (h > 0) {
-    document.getElementById('an-display').innerHTML = `${p.h}<span>:</span>${p.m}<span>:</span>${p.s}`;
-  } else {
-    document.getElementById('an-display').innerHTML = `${p.m}<span>:</span>${p.s}`;
-  }
-}
-function updateDIDisplay(secs) {
-  const p = fmtParts(secs);
-  document.getElementById('di-hr').textContent = p.h;
-  document.getElementById('di-min').textContent = p.m;
-  document.getElementById('di-sec').textContent = p.s;
-}
-function setStatus(id, text, cls) {
-  const el = document.getElementById(id+'-status');
-  el.textContent = text;
-  el.className = 'status-text ' + (cls||'');
-}
-
-/* ═══════════════════════════════════════
-   SANDCLOCK VISUAL
-═══════════════════════════════════════ */
-let hgRotation = 0, hgLastFlip = 0;
-function updateHourglass(remaining, total) {
-  const ratio = total > 0 ? remaining / total : 0;
-  // top chamber: full height 76px (y:12 to y:88), shrinks as sand falls
-  const topH = Math.max(0, ratio * 76);
-  // bottom chamber: full height 76px (y:92 to y:168), grows from bottom up
-  const bottomH = Math.max(0, (1 - ratio) * 76);
-
-  const topEl = document.getElementById('hg-sand-top');
-  const bottomEl = document.getElementById('hg-sand-bottom');
-  const streamEl = document.getElementById('hg-stream');
-
-  // Top sand: anchored at bottom of top chamber, shrinks upward
-  topEl.setAttribute('height', topH);
-  topEl.setAttribute('y', 12 + (76 - topH));
-
-  // Bottom sand: anchored at bottom (y=168), grows upward
-  bottomEl.setAttribute('height', bottomH);
-  bottomEl.setAttribute('y', 168 - bottomH);
-
-  const isRunning = state.sc.running;
-  streamEl.style.opacity = isRunning && ratio > 0 ? '0.9' : '0';
-}
-
-let hgAnimFrame = null;
-function animateHourglass() {
-  if (hgAnimFrame) cancelAnimationFrame(hgAnimFrame);
-  const svg = document.getElementById('hg-svg');
-  let startTime = null;
-  const duration = 600;
-  const startRot = hgRotation;
-  const targetRot = hgRotation + 180;
-
-  function step(t) {
-    if (!startTime) startTime = t;
-    const p = Math.min((t - startTime) / duration, 1);
-    const eased = p < 0.5 ? 4*p*p*p : 1-Math.pow(-2*p+2,3)/2;
-    svg.style.transform = `rotate(${startRot + eased * 180}deg)`;
-    if (p < 1) hgAnimFrame = requestAnimationFrame(step);
-    else hgRotation = targetRot;
-  }
-  requestAnimationFrame(step);
-}
-
-/* ═══════════════════════════════════════
-   ANALOG CLOCK VISUAL
-═══════════════════════════════════════ */
-// Build tick marks
-(function buildTicks() {
-  const svg = document.getElementById('clock-ticks-svg');
-  for (let i = 0; i < 60; i++) {
-    const angle = (i / 60) * 2 * Math.PI - Math.PI/2;
-    const isMaj = i % 5 === 0;
-    const r1 = isMaj ? 118 : 122, r2 = 128;
-    const x1 = 130 + r1 * Math.cos(angle), y1 = 130 + r1 * Math.sin(angle);
-    const x2 = 130 + r2 * Math.cos(angle), y2 = 130 + r2 * Math.sin(angle);
-    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
-    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
-    line.setAttribute('stroke', isMaj ? '#f0ece4' : '#2a2a2a');
-    line.setAttribute('stroke-width', isMaj ? '2' : '1');
-    svg.appendChild(line);
-  }
-})();
-
-function setClockHands(secs, total) {
-  const elapsed = total - secs;
-  const minDeg = (secs / 3600) * 360;  // countdown: remaining minutes
-  const hrDeg  = (secs / (12*3600)) * 360;
-  const secDeg = (secs % 60) / 60 * 360;
-
-  document.getElementById('minute-hand').style.transform = `rotate(${360 - minDeg % 360}deg)`;
-  document.getElementById('hour-hand').style.transform   = `rotate(${360 - hrDeg % 360}deg)`;
-  if (state.an.running) {
-    document.getElementById('second-hand-el').style.transition = 'transform 0.2s cubic-bezier(0.4,2.4,0.6,0.8)';
-    document.getElementById('second-hand-el').style.transform = `rotate(${360 - secDeg}deg)`;
-  }
-
-  // Progress ring
-  const circ = 879.6;
-  const ratio = total > 0 ? secs / total : 0;
-  document.getElementById('analog-progress-circle').style.strokeDashoffset = circ * (1 - ratio);
-}
-
-// Drag to set time
-(function setupAnalogDrag() {
-  const clock = document.getElementById('analog-clock');
-  const minHand = document.getElementById('minute-hand');
-  let dragging = false;
-
-  function getAngle(e) {
-    const rect = clock.getBoundingClientRect();
-    const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return Math.atan2(clientY - cy, clientX - cx) * 180 / Math.PI + 90;
-  }
-
-  function onDrag(e) {
-    if (!dragging || state.an.running) return;
-    e.preventDefault();
-    let angle = getAngle(e);
-    if (angle < 0) angle += 360;
-    const minutes = Math.round(angle / 360 * 60);
-    const secs = Math.min(Math.max(minutes * 60, 60), 90*60);
-    state.an.total = secs; state.an.remaining = secs;
-    setClockHands(secs, secs);
-    updateANDisplay(secs);
-  }
-
-  minHand.addEventListener('mousedown', () => { if (!state.an.running) { dragging = true; minHand.style.cursor='grabbing'; } });
-  minHand.addEventListener('touchstart', () => { if (!state.an.running) dragging = true; }, { passive: true });
-  document.addEventListener('mousemove', onDrag);
-  document.addEventListener('touchmove', onDrag, { passive: false });
-  document.addEventListener('mouseup', () => { dragging = false; minHand.style.cursor='grab'; });
-  document.addEventListener('touchend', () => { dragging = false; });
-})();
-
-/* ═══════════════════════════════════════
-   TIMER LOGIC
-═══════════════════════════════════════ */
-function startTimer(id) {
-  const s = state[id];
-  if (s.running && !s.paused) return;
-  if (s.remaining <= 0) { resetTimer(id); return; }
-
-  s.running = true; s.paused = false;
-  if (id === 'di') {
-    document.getElementById('di-colon').classList.add('blink');
-    document.getElementById('di-hr').classList.add('running');
-    document.getElementById('di-min').classList.add('running');
-    document.getElementById('di-sec').classList.add('running');
-  }
-  setStatus(id, 'Running', 'running');
-
-  clearInterval(s.interval);
-  s.interval = setInterval(() => {
-    s.remaining--;
-    updateDisplay(id, s.remaining);
-    playTick();
-
-    if (id === 'an') setClockHands(s.remaining, s.total);
-    if (id === 'sc') updateHourglass(s.remaining, s.total);
-
-    if (s.remaining <= 0) {
-      clearInterval(s.interval);
-      s.running = false;
-      onComplete(id);
+<script src="script.js"></script>
+  <!-- PWA Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Reg failed:', err));
+      });
     }
-  }, 1000);
-}
-
-function pauseTimer(id) {
-  const s = state[id];
-  if (!s.running || s.paused) return;
-  clearInterval(s.interval); s.paused = true;
-  if (id === 'di') document.getElementById('di-colon').classList.remove('blink');
-  setStatus(id, 'Paused', 'paused');
-}
-
-function stopTimer(id) {
-  const s = state[id];
-  clearInterval(s.interval); s.running = false; s.paused = false;
-  s.remaining = s.total;
-  updateDisplay(id, s.remaining);
-  if (id === 'an') setClockHands(s.remaining, s.total);
-  if (id === 'sc') updateHourglass(s.remaining, s.total);
-  if (id === 'di') {
-    document.getElementById('di-colon').classList.remove('blink');
-    document.getElementById('di-hr').classList.remove('running','editing');
-    document.getElementById('di-min').classList.remove('running','editing');
-    document.getElementById('di-sec').classList.remove('running','editing');
-  }
-  setStatus(id, 'Stopped', '');
-}
-
-function resetTimer(id) {
-  stopTimer(id);
-  setStatus(id, 'Ready', '');
-}
-
-function updateDisplay(id, secs) {
-  if (id === 'sc') updateSCDisplay(secs);
-  else if (id === 'an') updateANDisplay(secs);
-  else if (id === 'di') updateDIDisplay(secs);
-}
-
-function onComplete(id) {
-  setStatus(id, 'Done!', 'done');
-  const titles = { sc:'Sand Clock', an:'Analog Timer', di:'Digital Timer' };
-  showNotify(`${titles[id]} — Session complete ✓`);
-  playDoneSound();
-  // Flash visual
-  if (id === 'sc') document.querySelector('.hourglass-wrap').classList.add('done-animate');
-  if (id === 'di') document.getElementById('di-display-wrap').classList.add('done-animate');
-  if (id === 'an') document.getElementById('analog-clock').classList.add('done-animate');
-  setTimeout(() => {
-    document.querySelector('.done-animate') && document.querySelector('.done-animate').classList.remove('done-animate');
-  }, 3000);
-}
-
-/* ═══════════════════════════════════════
-   ADJUST TIME
-═══════════════════════════════════════ */
-function adjustSC(delta) {
-  if (state.sc.running) return;
-  state.sc.total = Math.max(60, Math.min(MAX_SECS, state.sc.total + delta));
-  state.sc.remaining = state.sc.total;
-  updateSCDisplay(state.sc.remaining);
-  updateHourglass(state.sc.remaining, state.sc.total);
-}
-function adjustAN(delta) {
-  if (state.an.running) return;
-  state.an.total = Math.max(60, Math.min(MAX_SECS, state.an.total + delta));
-  state.an.remaining = state.an.total;
-  updateANDisplay(state.an.remaining);
-  setClockHands(state.an.remaining, state.an.total);
-}
-function adjustDigit(part, delta) {
-  if (state.di.running) return;
-  const secs = state.di.total;
-  let h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
-  if (part === 'hr')  h = Math.max(0, Math.min(9, h + delta));
-  else if (part === 'min') m = Math.max(0, Math.min(59, m + delta));
-  else s = Math.max(0, Math.min(59, s + delta));
-  const total = h*3600 + m*60 + s;
-  state.di.total = Math.max(1, total);
-  state.di.remaining = state.di.total;
-  updateDIDisplay(state.di.remaining);
-}
-
-/* ═══════════════════════════════════════
-   PROMPT SET TIME
-═══════════════════════════════════════ */
-function promptSetTime(id) {
-  if (state[id].running) return;
-  const input = prompt('Set timer (hh:mm:ss or mm:ss or minutes):', fmt(state[id].total));
-  if (!input) return;
-  let secs = 0;
-  const parts = input.trim().split(':');
-  if (parts.length === 3) secs = parseInt(parts[0]||0)*3600 + parseInt(parts[1]||0)*60 + parseInt(parts[2]||0);
-  else if (parts.length === 2) secs = parseInt(parts[0]||0)*60 + parseInt(parts[1]||0);
-  else secs = parseInt(input)*60;
-  secs = Math.max(1, Math.min(MAX_SECS, secs || 1500));
-  state[id].total = secs; state[id].remaining = secs;
-  updateDisplay(id, secs);
-  if (id === 'sc') updateHourglass(secs, secs);
-}
-
-function focusDigit(part) {
-  if (state.di.running) return;
-  document.querySelectorAll('.seven-seg').forEach(e => e.classList.remove('editing'));
-  document.getElementById('di-' + part).classList.add('editing');
-}
-
-/* ═══════════════════════════════════════
-   TICK SOUND
-═══════════════════════════════════════ */
-let tickEnabled = false;
-let audioCtx = null;
-
-function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  return audioCtx;
-}
-
-function playTick() {
-  if (!tickEnabled) return;
-  try {
-    const ctx = getAudioCtx();
-    // Clock tick: sharp transient noise burst
-    const bufSize = ctx.sampleRate * 0.04; // 40ms
-    const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < bufSize; i++) {
-      // Exponential decay of white noise = tick click
-      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufSize * 0.08));
-    }
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    const gain = ctx.createGain();
-    gain.gain.value = 0.35;
-    // High-pass to make it crisp
-    const hp = ctx.createBiquadFilter();
-    hp.type = 'highpass'; hp.frequency.value = 1200;
-    src.connect(hp); hp.connect(gain); gain.connect(ctx.destination);
-    src.start();
-  } catch(e) {}
-}
-
-function toggleTick(btn) {
-  tickEnabled = !tickEnabled;
-  btn.textContent = tickEnabled ? '🔔 Tick: On' : '🔔 Tick: Off';
-  btn.classList.toggle('active', tickEnabled);
-  // Resume audio context on user gesture
-  if (tickEnabled && audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-  if (tickEnabled) playTick(); // preview click
-}
-
-function playDoneSound() {
-  // Simple beep via Web Audio API
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    [0, 200, 400].forEach(delay => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.3, ctx.currentTime + delay/1000);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay/1000 + 0.4);
-      osc.start(ctx.currentTime + delay/1000);
-      osc.stop(ctx.currentTime + delay/1000 + 0.4);
-    });
-  } catch(e) {}
-}
-
-/* ═══════════════════════════════════════
-   BREAK
-═══════════════════════════════════════ */
-function openBreak(id) {
-  breakSourceTimer = id;
-  if (state[id].running) pauseTimer(id);
-  setBreak(5, document.querySelector('.preset-btn'));
-  document.getElementById('break-modal').classList.add('open');
-}
-function closeBreak() {
-  clearInterval(breakInterval);
-  document.getElementById('break-modal').classList.remove('open');
-}
-function setBreak(mins, btn) {
-  clearInterval(breakInterval);
-  breakRemaining = mins * 60;
-  document.getElementById('break-display').textContent = fmt(breakRemaining);
-  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  // Update display
-  document.getElementById('break-display').textContent = fmt(breakRemaining);
-}
-function startBreak() {
-  clearInterval(breakInterval);
-  breakInterval = setInterval(() => {
-    breakRemaining--;
-    document.getElementById('break-display').textContent = fmt(breakRemaining);
-    if (breakRemaining <= 0) {
-      clearInterval(breakInterval);
-      document.getElementById('break-display').textContent = '00:00';
-      showNotify('Break over — Back to focus');
-      playDoneSound();
-      setTimeout(closeBreak, 1500);
-    }
-  }, 1000);
-}
-
-/* ═══════════════════════════════════════
-   NOTIFY
-═══════════════════════════════════════ */
-function showNotify(msg) {
-  const n = document.getElementById('notify');
-  n.textContent = msg; n.classList.add('show');
-  setTimeout(() => n.classList.remove('show'), 3500);
-}
-
-/* ═══════════════════════════════════════
-   INIT
-═══════════════════════════════════════ */
-// Set initial states
-updateSCDisplay(state.sc.remaining);
-updateHourglass(state.sc.remaining, state.sc.total);
-updateANDisplay(state.an.remaining);
-setClockHands(state.an.remaining, state.an.total);
-updateDIDisplay(state.di.remaining);
-
-// Keyboard shortcuts
-document.addEventListener('keydown', e => {
-  const p = currentPage;
-  if (p === 'home') return;
-  const id = p === 'sandclock-page' ? 'sc' : p === 'analog-page' ? 'an' : 'di';
-  if (e.code === 'Space') { e.preventDefault(); state[id].running && !state[id].paused ? pauseTimer(id) : startTimer(id); }
-  if (e.code === 'KeyR') resetTimer(id);
-  if (e.code === 'Escape') navigate('home');
-});
-
-</script>
+  </script>
 </body>
 </html>
