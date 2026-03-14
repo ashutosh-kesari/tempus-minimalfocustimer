@@ -324,7 +324,7 @@
           <button class="spin-btn" onclick="adjustDigit('hr',1)">▲</button>
           <button class="spin-btn" onclick="adjustDigit('hr',-1)">▼</button>
         </div>
-        <div class="seven-seg" id="di-hr" data-ghost="8" tabindex="0" onclick="focusDigit('hr')" onkeydown="digitKey(event,'hr')">00</div>
+        <div class="seven-seg" id="di-hr" data-ghost="8" tabindex="0" onclick="openNumpad('hr')" onkeydown="digitKey(event,'hr')">00</div>
         <div class="digit-label">hr</div>
       </div>
       <div class="colon">:</div>
@@ -333,7 +333,7 @@
           <button class="spin-btn" onclick="adjustDigit('min',1)">▲</button>
           <button class="spin-btn" onclick="adjustDigit('min',-1)">▼</button>
         </div>
-        <div class="seven-seg" id="di-min" data-ghost="88" tabindex="0" onclick="focusDigit('min')" onkeydown="digitKey(event,'min')">25</div>
+        <div class="seven-seg" id="di-min" data-ghost="88" tabindex="0" onclick="openNumpad('min')" onkeydown="digitKey(event,'min')">25</div>
         <div class="digit-label">min</div>
       </div>
       <div class="colon" id="di-colon">:</div>
@@ -342,7 +342,7 @@
           <button class="spin-btn" onclick="adjustDigit('sec',1)">▲</button>
           <button class="spin-btn" onclick="adjustDigit('sec',-1)">▼</button>
         </div>
-        <div class="seven-seg" id="di-sec" data-ghost="88" tabindex="0" onclick="focusDigit('sec')" onkeydown="digitKey(event,'sec')">00</div>
+        <div class="seven-seg" id="di-sec" data-ghost="88" tabindex="0" onclick="openNumpad('sec')" onkeydown="digitKey(event,'sec')">00</div>
         <div class="digit-label">sec</div>
       </div>
     </div>
@@ -431,6 +431,31 @@
 
 <!-- Notification -->
 <div class="notify" id="notify"></div>
+
+<!-- ════════════════════ NUMPAD MODAL ════════════════════ -->
+<div class="numpad-overlay" id="numpad-overlay" onclick="numpadOverlayClick(event)">
+  <div class="numpad-modal" id="numpad-modal">
+    <div class="numpad-header">
+      <span class="numpad-field-label" id="numpad-field-label">Minutes</span>
+      <div class="numpad-preview" id="numpad-preview">25</div>
+    </div>
+    <div class="numpad-grid">
+      <button class="numpad-btn" onclick="numpadPress('1')">1</button>
+      <button class="numpad-btn" onclick="numpadPress('2')">2</button>
+      <button class="numpad-btn" onclick="numpadPress('3')">3</button>
+      <button class="numpad-btn" onclick="numpadPress('4')">4</button>
+      <button class="numpad-btn" onclick="numpadPress('5')">5</button>
+      <button class="numpad-btn" onclick="numpadPress('6')">6</button>
+      <button class="numpad-btn" onclick="numpadPress('7')">7</button>
+      <button class="numpad-btn" onclick="numpadPress('8')">8</button>
+      <button class="numpad-btn" onclick="numpadPress('9')">9</button>
+      <button class="numpad-btn numpad-back" onclick="numpadBackspace()">⌫</button>
+      <button class="numpad-btn" onclick="numpadPress('0')">0</button>
+      <button class="numpad-btn numpad-done" onclick="numpadDone()">✓</button>
+    </div>
+    <div class="numpad-hint">Tap ✓ or swipe down to confirm</div>
+  </div>
+</div>
 
 <script src="script.js"></script>
   <!-- PWA Service Worker Registration -->
