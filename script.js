@@ -481,6 +481,113 @@ function digitKey(e, part) {
   }
 }
 
+/* ═══════════════════════════════════════
+   VIRTUAL NUMPAD (mobile)
+═══════════════════════════════════════ */
+let _numpadPart = null;      // 'hr' | 'min' | 'sec'
+let _numpadStr  = '';        // accumulated digit string (up to 2 chars)
+
+function openNumpad(part) {
+  if (state.di.running) return;
+  _numpadPart = part;
+
+  // Populate header label
+  const labels = { hr: 'Hours', min: 'Minutes', sec: 'Seconds' };
+  document.getElementById('numpad-field-label').textContent = labels[part];
+
+  // Seed preview with current value
+  const secs = state.di.total;
+  let h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
+  const cur = part === 'hr' ? h : part === 'min' ? m : s;
+  _numpadStr = String(cur).padStart(2, '0');
+  document.getElementById('numpad-preview').textContent = _numpadStr;
+
+  // Highlight the seg
+  focusDigit(part);
+
+  // Open overlay
+  document.getElementById('numpad-overlay').classList.add('open');
+  playClickSound();
+}
+
+function closeNumpad() {
+  document.getElementById('numpad-overlay').classList.remove('open');
+  document.querySelectorAll('.seven-seg').forEach(e => e.classList.remove('editing'));
+  _numpadPart = null;
+  _numpadStr  = '';
+}
+
+function numpadOverlayClick(e) {
+  // Close only if clicking the dim backdrop (not the modal itself)
+  if (e.target === document.getElementById('numpad-overlay')) {
+    numpadDone(); // commit before closing
+  }
+}
+
+function _numpadApply() {
+  if (!_numpadPart) return;
+  let val = parseInt(_numpadStr || '0', 10);
+  if (_numpadPart === 'hr') val = Math.min(99, val);
+  else val = Math.min(59, val);
+
+  const secs = state.di.total;
+  let h = Math.floor(secs/3600), m = Math.floor((secs%3600)/60), s = secs%60;
+  if (_numpadPart === 'hr') h = val;
+  if (_numpadPart === 'min') m = val;
+  if (_numpadPart === 'sec') s = val;
+
+  const total = Math.max(1, h*3600 + m*60 + s);
+  state.di.total = total;
+  state.di.remaining = total;
+  updateDIDisplay(total);
+}
+
+function numpadPress(digit) {
+  if (!_numpadPart) return;
+  // Shift left and append new digit (scroll-in style, max 2 chars)
+  if (_numpadStr.length >= 2) _numpadStr = _numpadStr[1] + digit;
+  else _numpadStr += digit;
+  // Clamp preview
+  let val = parseInt(_numpadStr, 10);
+  if (_numpadPart !== 'hr') val = Math.min(59, val);
+  _numpadStr = String(val).padStart(2, '0');
+
+  const preview = document.getElementById('numpad-preview');
+  preview.textContent = _numpadStr;
+  // Micro-pop animation
+  preview.classList.remove('pop');
+  void preview.offsetWidth; // reflow
+  preview.classList.add('pop');
+  setTimeout(() => preview.classList.remove('pop'), 120);
+
+  _numpadApply();
+  playClickSound();
+}
+
+function numpadBackspace() {
+  if (!_numpadPart) return;
+  _numpadStr = _numpadStr.slice(0, -1) || '0';
+  _numpadStr = _numpadStr.padStart(2, '0');
+  document.getElementById('numpad-preview').textContent = _numpadStr;
+  _numpadApply();
+  playClickSound();
+}
+
+function numpadDone() {
+  _numpadApply();
+  closeNumpad();
+  playClickSound();
+}
+
+// Allow physical keyboard to still type into the focused seven-seg even while numpad is open
+document.addEventListener('keydown', e => {
+  if (!_numpadPart) return;
+  if (e.key >= '0' && e.key <= '9') { e.preventDefault(); numpadPress(e.key); }
+  else if (e.key === 'Backspace')    { e.preventDefault(); numpadBackspace(); }
+  else if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); numpadDone(); }
+  else if (e.key === 'Escape')       { closeNumpad(); }
+});
+
 document.addEventListener('click', e => {
   if (!e.target.closest('.digit-group')) {
     document.querySelectorAll('.seven-seg').forEach(el => el.classList.remove('editing'));
